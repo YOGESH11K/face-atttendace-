@@ -13,6 +13,8 @@ def test_stats_empty(logged_in_client):
     assert data["today_attendance"] == 0
     assert data["total_records"] == 0
     assert data["today_list"] == []
+    assert data["photo_counts"] == {}
+    assert data["this_week"] == 0
 
 
 def test_attendance_empty(logged_in_client):

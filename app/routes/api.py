@@ -3,6 +3,7 @@
 import csv
 import io
 import logging
+import re
 from datetime import datetime
 
 import cv2
@@ -60,6 +61,88 @@ def _clamp_int(value, default, minimum, maximum):
     return max(minimum, min(maximum, v))
 
 
+def _admin_required(fn):
+    from functools import wraps
+
+    from flask_login import login_required
+
+    @wraps(fn)
+    @login_required
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({"error": "unauthorized"}), 401
+        if not current_user.is_admin:
+            return jsonify({"error": "forbidden", "detail": "admin role required"}), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+# ── Admin: user management ───────────────────────────────────────────────
+
+@bp.get("/users")
+@_admin_required
+def api_list_users():
+    from .. import models
+
+    return jsonify({"users": models.list_users(current_app.db)})
+
+
+@bp.post("/users")
+@_admin_required
+@limiter.limit("30/minute")
+def api_create_user():
+    from .. import models
+
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username") or "").strip().lower()
+    password = data.get("password") or ""
+    display_name = str(data.get("display_name") or "").strip()
+    school = str(data.get("school") or "").strip()
+    role = data.get("role") or "teacher"
+
+    if not username or len(username) < 3 or len(username) > 64:
+        return jsonify({"error": "Username must be 3-64 characters"}), 400
+    if not re.match(r"^[a-z0-9_]+$", username):
+        return jsonify({"error": "Username may only contain letters, digits and underscores"}), 400
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+    if not display_name:
+        return jsonify({"error": "Display name is required"}), 400
+    if role not in ("teacher", "admin"):
+        role = "teacher"
+    if models.get_user_by_username(current_app.db, username):
+        return jsonify({"error": "Username already exists"}), 409
+
+    user_id = models.create_user(
+        current_app.db, username, password, display_name, school, role=role
+    )
+    if user_id is None:
+        return jsonify({"error": "Username already exists"}), 409
+    logger.info("admin=%s created user=%s role=%s", current_user.username, username, role)
+    return jsonify({"ok": True, "id": user_id, "username": username, "role": role}), 201
+
+
+@bp.post("/users/<int:user_id>/role")
+@_admin_required
+@limiter.limit("60/minute")
+def api_set_user_role(user_id):
+    from .. import models
+
+    data = request.get_json(silent=True) or {}
+    role = data.get("role")
+    if role not in ("teacher", "admin"):
+        return jsonify({"error": "role must be 'teacher' or 'admin'"}), 400
+    target = models.get_user_by_id(current_app.db, user_id)
+    if target is None:
+        return jsonify({"error": "user not found"}), 404
+    if user_id == current_user.id and role != "admin":
+        return jsonify({"error": "you cannot demote your own account"}), 400
+    models.set_user_role(current_app.db, user_id, role)
+    logger.info("admin=%s set role of user=%s to %s", current_user.username, target.username, role)
+    return jsonify({"ok": True, "id": user_id, "role": role})
+
+
 @bp.get("/stats")
 @_login_required_api
 def api_stats():
@@ -69,11 +152,14 @@ def api_stats():
 
     total, today_count, today_list = models.attendance_stats(db, current_user.id, today)
     photo_counts = models.student_photo_counts(db, current_user.id)
+    this_week = sum(models.weekly_counts(db, current_user.id).values())
     return jsonify({
         "students": sorted(photo_counts.keys()),
         "student_count": len(photo_counts),
+        "photo_counts": {k: int(v) for k, v in photo_counts.items()},
         "today_attendance": today_count,
         "total_records": total,
+        "this_week": int(this_week),
         "today_list": today_list,
         "username": current_user.display_name,
         "school": current_user.school,

@@ -44,10 +44,11 @@ app/
   routes/
     auth.py        Login / register / logout (CSRF + rate limited)
     main.py        Dashboard and enroll pages
-    api.py         /api/stats, /api/attendance, /api/recognize, exports
+    api.py         /api/stats, /api/attendance, /api/recognize, /api/users (admin), exports
     enroll.py      /api/enroll/* (capture, upload, list, view, delete)
 templates/         Jinja2 templates (dashboard, enroll, login, register, error)
-tests/             pytest suite (auth, api, enroll, recognition)
+tests/             pytest suite (auth, api, enroll, recognition, users)
+manage.py          Admin CLI (create-user, set-role, reset-password, list-users)
 Dockerfile         Multi-stage production image (compiles dlib)
 render.yaml        Render blueprint (free-tier web + Postgres)
 .github/workflows  CI (lint + tests + boot check)

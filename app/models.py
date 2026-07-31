@@ -93,6 +93,65 @@ def set_user_role(db, user_id, role):
     sess.commit()
 
 
+def list_users(db, include_password=False):
+    """Return all accounts with per-user photo/attendance counts.
+
+    Columns: id, username, display_name, school, role, created_at,
+    photo_count, attendance_count, last_attendance.
+    """
+    photo_counts = db.session.execute(
+        select(
+            face_encodings.c.user_id,
+            func.count(face_encodings.c.id).label("n"),
+        ).group_by(face_encodings.c.user_id)
+    ).all()
+    attendance_counts = db.session.execute(
+        select(
+            attendance_records.c.user_id,
+            func.count(attendance_records.c.id).label("n"),
+        ).group_by(attendance_records.c.user_id)
+    ).all()
+    last_attendance = db.session.execute(
+        select(
+            attendance_records.c.user_id,
+            attendance_records.c.date,
+        )
+        .order_by(attendance_records.c.date.desc())
+    ).all()
+
+    photos = dict(photo_counts)
+    att_total = dict(attendance_counts)
+    att_last: dict = {}
+    for user_id, date_str in last_attendance:
+        att_last.setdefault(user_id, date_str)
+
+    rows = db.session.execute(
+        select(
+            users.c.id,
+            users.c.username,
+            users.c.display_name,
+            users.c.school,
+            users.c.role,
+            users.c.created_at,
+        ).order_by(users.c.id)
+    ).all()
+    result = []
+    for r in rows:
+        item = {
+            "id": r.id,
+            "username": r.username,
+            "display_name": r.display_name,
+            "school": r.school or "",
+            "role": r.role or "teacher",
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "photo_count": int(photos.get(r.id, 0)),
+            "attendance_count": int(att_total.get(r.id, 0)),
+            "last_attendance": att_last.get(r.id),
+        }
+        result.append(item)
+    return result
+
+
 def get_user_role(db, user_id):
     return db.session.execute(
         select(users.c.role).where(users.c.id == user_id)

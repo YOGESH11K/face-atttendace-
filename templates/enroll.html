@@ -9,23 +9,27 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg: #0a0e1a; --surface: rgba(255,255,255,0.04);
-            --surface-hover: rgba(255,255,255,0.08); --border: rgba(255,255,255,0.06);
-            --text: #e8edf5; --text-muted: #8892a8;
-            --primary: #6c5ce7; --primary-glow: rgba(108,92,231,0.25);
-            --green: #00cec9; --green-bg: rgba(0,206,201,0.12);
+            --bg: #06130d; --surface: rgba(0,214,143,0.05);
+            --surface-hover: rgba(0,214,143,0.10); --border: rgba(0,214,143,0.14);
+            --text: #e6f6ef; --text-muted: #7fa399;
+            --primary: #00d68f; --primary-glow: rgba(0,214,143,0.25);
+            --green: #00e68c; --green-bg: rgba(0,230,140,0.12);
             --red: #ff6b6b; --red-bg: rgba(255,107,107,0.12);
             --radius: 16px; --radius-sm: 10px;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg); color: var(--text);
+            background:
+                radial-gradient(1000px 500px at 85% -10%, rgba(0,214,143,0.08) 0%, transparent 60%),
+                radial-gradient(800px 500px at -10% 110%, rgba(0,184,217,0.07) 0%, transparent 55%),
+                var(--bg);
+            color: var(--text);
             min-height: 100vh;
         }
         body::before {
             content: ''; position: fixed;
             top: -40%; left: -20%; width: 70%; height: 80%;
-            background: radial-gradient(ellipse, rgba(108,92,231,0.08) 0%, transparent 70%);
+            background: radial-gradient(ellipse, rgba(0,214,143,0.07) 0%, transparent 70%);
             pointer-events: none; z-index: 0;
         }
         nav {
@@ -36,9 +40,9 @@
         nav .brand { display: flex; align-items: center; gap: 10px; }
         nav .brand .logo {
             width: 36px; height: 36px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--primary), #a29bfe);
+            background: linear-gradient(135deg, var(--primary), #00b8d9);
             display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 14px;
+            font-weight: 800; font-size: 14px; color: #04120b;
             box-shadow: 0 4px 15px var(--primary-glow);
         }
         nav .brand span { font-weight: 700; font-size: 15px; }
@@ -49,12 +53,12 @@
             font-family: inherit; font-size: 13px; font-weight: 600;
             cursor: pointer; transition: all 0.2s; text-decoration: none;
         }
-        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary { background: var(--primary); color: #04120b; }
         .btn-primary:hover { box-shadow: 0 4px 15px var(--primary-glow); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
         .btn-outline:hover { background: var(--surface-hover); }
-        .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(0,206,201,0.2); }
-        .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,107,107,0.2); }
+        .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(0,230,140,0.25); }
+        .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,107,107,0.25); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .container { max-width: 800px; margin: 0 auto; padding: 32px 20px; position: relative; z-index: 1; }
         h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
@@ -68,17 +72,17 @@
         .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
         input {
             padding: 10px 16px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(0,214,143,0.18);
             border-radius: 10px;
-            color: #e8edf5;
+            color: #e6f6ef;
             font-family: inherit;
             font-size: 14px;
             outline: none;
             transition: all 0.2s;
             width: 100%;
         }
-        input:focus { border-color: #6c5ce7; box-shadow: 0 0 0 3px rgba(108,92,231,0.15); }
+        input:focus { border-color: #00d68f; box-shadow: 0 0 0 3px rgba(0,214,143,0.15); }
         .video-container {
             position: relative; border-radius: var(--radius-sm); overflow: hidden;
             background: #000; margin-bottom: 16px;
@@ -109,8 +113,8 @@
             padding: 12px 16px; border-radius: 10px; font-size: 13px;
             margin-bottom: 16px; display: none;
         }
-        .flash-msg.success { display: block; background: var(--green-bg); border: 1px solid rgba(0,206,201,0.2); color: var(--green); }
-        .flash-msg.error { display: block; background: var(--red-bg); border: 1px solid rgba(255,107,107,0.2); color: var(--red); }
+        .flash-msg.success { display: block; background: var(--green-bg); border: 1px solid rgba(0,230,140,0.25); color: var(--green); }
+        .flash-msg.error { display: block; background: var(--red-bg); border: 1px solid rgba(255,107,107,0.25); color: var(--red); }
         .file-input-wrap { position: relative; overflow: hidden; display: inline-flex; }
         .file-input-wrap input[type=file] {
             position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
@@ -121,7 +125,7 @@
             background: var(--surface-hover); font-size: 12px; font-weight: 500;
         }
         .student-badge .count {
-            background: var(--primary); color: #fff;
+            background: var(--primary); color: #04120b;
             border-radius: 10px; padding: 1px 8px; font-size: 11px;
         }
         .students-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
