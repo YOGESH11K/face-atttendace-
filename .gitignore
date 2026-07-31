@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Application data (DO NOT commit: biometric data, attendance DB, photos)
+database.db
+database.db-journal
+database.db-wal
+database.db-shm
+data/
+enrollments/
+encodings/
+images/
+attendance/
+attendance.csv
+*.pkl
+*.pickle
+
+# Notebooks (scratch / legacy)
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test_data/
+test_*.db
+
+# Logs
+*.log
+logs/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

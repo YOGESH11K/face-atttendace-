@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ title }} | Face Attendance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e1a; color: #e8edf5;
+            min-height: 100vh; display: flex;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 24px;
+        }
+        .box { max-width: 420px; }
+        .code { font-size: 64px; font-weight: 800; background: linear-gradient(135deg, #fff, #a29bfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h1 { font-size: 22px; margin: 12px 0 8px; }
+        p { color: #8892a8; font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+        a {
+            display: inline-block; padding: 10px 22px; border-radius: 10px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff;
+            text-decoration: none; font-size: 14px; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="code">{{ title }}</div>
+        <h1>{{ title }}</h1>
+        <p>{{ message }}</p>
+        <a href="/">Back to Home</a>
+    </div>
+</body>
+</html>

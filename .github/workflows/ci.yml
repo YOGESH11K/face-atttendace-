@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system build dependencies (dlib compiles from source)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake build-essential libopenblas-dev liblapack-dev
+
+      - name: Install Python dependencies
+        env:
+          MAKEFLAGS: "-j2"
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Run tests
+        run: python -m pytest
+
+      - name: Verify app boots
+        run: |
+          python -c "from app import create_app; a = create_app(); c = a.test_client(); r = c.get('/healthz'); assert r.status_code == 200, r.data; print('healthz OK', r.get_json())"

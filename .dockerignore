@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Env / secrets
+.env
+.env.*
+
+# App data (biometric data, DB, photos)
+database.db*
+data/
+enrollments/
+encodings/
+images/
+attendance/
+*.pkl
+
+# Tests / tooling
+.pytest_cache/
+.coverage
+htmlcov/
+test_data/
+
+# Git / IDE
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# CI files
+.github/
