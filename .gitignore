@@ -37,10 +37,14 @@ attendance.csv
 
 # Testing
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 test_data/
 test_*.db
+
+# Large local documents (not needed to run/deploy)
+*.pptx
 
 # Logs
 *.log

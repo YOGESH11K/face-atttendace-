@@ -13,7 +13,7 @@ databases:
 
 services:
   - type: web
-    name: face-attendance
+    name: empirerecorgination
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
