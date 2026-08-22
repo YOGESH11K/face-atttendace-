@@ -78,6 +78,16 @@ def _admin_required(fn):
     return wrapper
 
 
+# ── Session bootstrap for SPA frontends ──────────────────────────────────
+
+@bp.get("/csrf")
+def api_csrf():
+    """Issue a CSRF token bound to the caller's session cookie."""
+    from flask_wtf.csrf import generate_csrf
+
+    return jsonify({"csrf_token": generate_csrf()})
+
+
 # ── Admin: user management ───────────────────────────────────────────────
 
 @bp.get("/users")
@@ -163,6 +173,7 @@ def api_stats():
         "today_list": today_list,
         "username": current_user.display_name,
         "school": current_user.school,
+        "role": current_user.role,
     })
 
 

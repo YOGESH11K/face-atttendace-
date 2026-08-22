@@ -29,6 +29,11 @@ services:
         value: /app/data
       - key: SESSION_COOKIE_SECURE
         value: true
+      - key: SESSION_COOKIE_SAMESITE
+        value: None
+      # Allow the SPA frontend (Vercel) to call this API with credentials.
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://empirerecorgination.vercel.app
       - key: RENDER
         value: true
       - key: ALLOW_REGISTRATION

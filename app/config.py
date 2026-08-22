@@ -33,16 +33,29 @@ class Config:
 
     # -- Session / cookies --
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Lax"
+    # Set to "None" (with HTTPS) when a separate frontend domain calls this API.
+    _samesite = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax").strip().capitalize()
+    SESSION_COOKIE_SAMESITE = _samesite if _samesite in ("Lax", "Strict", "None") else "Lax"
     # Secure cookies whenever running behind HTTPS (auto-enabled on Render, or
     # set explicitly with SESSION_COOKIE_SECURE=true).
+    # SameSite=None requires Secure per modern browser rules.
     SESSION_COOKIE_SECURE = _env_bool(
-        "SESSION_COOKIE_SECURE", os.environ.get("RENDER") == "true"
+        "SESSION_COOKIE_SECURE",
+        os.environ.get("RENDER") == "true" or SESSION_COOKIE_SAMESITE == "None",
     )
     PERMANENT_SESSION_LIFETIME = timedelta(days=int(os.environ.get("SESSION_DAYS", "7")))
     REMEMBER_COOKIE_HTTPONLY = True
-    REMEMBER_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
     REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+
+    # -- Cross-origin API access (separate SPA frontend) --
+    # Comma-separated list of origins allowed to call the API with credentials,
+    # e.g. "https://empirerecorgination.vercel.app". Empty disables CORS.
+    CORS_ALLOWED_ORIGINS = {
+        o.strip().rstrip("/")
+        for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+        if o.strip()
+    }
 
     # -- CSRF --
     WTF_CSRF_TIME_LIMIT = int(os.environ.get("WTF_CSRF_TIME_LIMIT", "28800"))  # 8h

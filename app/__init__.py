@@ -98,6 +98,46 @@ def _security_headers(app):
         return response
 
 
+def _configure_cors(app):
+    """Allow credentialed cross-origin API access from configured frontends.
+
+    Enabled by listing origins in CORS_ALLOWED_ORIGINS (see config.py).
+    Only /api/*, /login, /register and /logout are exposed.
+    """
+    allowed = app.config.get("CORS_ALLOWED_ORIGINS") or set()
+    if not allowed:
+        return
+
+    def _origin_allowed(origin):
+        return origin and origin.rstrip("/") in allowed
+
+    @app.before_request
+    def _cors_preflight():
+        origin = request.headers.get("Origin")
+        if request.method == "OPTIONS" and _origin_allowed(origin):
+            response = app.make_default_options_response()
+            response.status_code = 204
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = (
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            )
+            response.headers["Access-Control-Allow-Headers"] = (
+                "Content-Type, X-CSRFToken, X-CSRF-Token"
+            )
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+
+    @app.after_request
+    def _cors_headers(response):
+        origin = request.headers.get("Origin")
+        if _origin_allowed(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Vary"] = "Origin"
+        return response
+
+
 def render_error_page(title, message):
     from flask import render_template
 
@@ -106,7 +146,12 @@ def render_error_page(title, message):
 
 def _register_error_handlers(app):
     def is_api():
-        return request.path.startswith("/api/")
+        # JSON clients (SPA frontend) get machine-readable errors everywhere,
+        # including auth endpoints outside /api/*.
+        accept = request.headers.get("Accept") or ""
+        return request.path.startswith("/api/") or (
+            "application/json" in accept and "text/html" not in accept
+        )
 
     def json_error(message, status):
         return jsonify({"error": message}), status
@@ -177,6 +222,7 @@ def create_app(config_object=None):
 
     _request_logging(app)
     _security_headers(app)
+    _configure_cors(app)
     _register_error_handlers(app)
 
     @app.before_request

@@ -6,6 +6,7 @@ from flask import (
     Blueprint,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -33,10 +34,21 @@ def _user_password_hash(user_id):
     ).scalar()
 
 
+def _wants_json():
+    """True when the caller expects a JSON response (SPA frontend)."""
+    if request.is_json:
+        return True
+    accept = request.headers.get("Accept") or ""
+    return "application/json" in accept and "text/html" not in accept
+
+
 @bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("10/minute")
 def login():
+    wants_json = _wants_json()
     if current_user.is_authenticated:
+        if wants_json:
+            return jsonify({"ok": True, "username": current_user.username})
         return redirect(url_for("dashboard.index"))
     if request.method == "POST":
         username = (request.form.get("username") or "").strip().lower()
@@ -49,10 +61,19 @@ def login():
             # with the browser).
             session.permanent = True
             logger.info("user=%s login ok", user.username)
+            if wants_json:
+                return jsonify({
+                    "ok": True,
+                    "username": user.username,
+                    "display_name": user.display_name,
+                    "role": user.role,
+                })
             next_url = request.args.get("next")
             if next_url and next_url.startswith("/") and not next_url.startswith("//"):
                 return redirect(next_url)
             return redirect(url_for("dashboard.index"))
+        if wants_json:
+            return jsonify({"error": "Invalid username or password"}), 401
         flash("Invalid username or password", "error")
         return render_template("login.html")
     return render_template("login.html")
@@ -61,10 +82,14 @@ def login():
 @bp.route("/register", methods=["GET", "POST"])
 @limiter.limit("5/hour")
 def register():
+    wants_json = _wants_json()
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))
     if not current_app.config["ALLOW_REGISTRATION"]:
-        flash("Self-service registration is disabled. Contact your administrator.", "error")
+        msg = "Self-service registration is disabled. Contact your administrator."
+        if wants_json:
+            return jsonify({"error": msg}), 403
+        flash(msg, "error")
         return render_template("register.html")
     if request.method == "POST":
         try:
@@ -76,11 +101,15 @@ def register():
                 request.form.get("confirm_password") or "",
             )
         except ValidationError as exc:
+            if wants_json:
+                return jsonify({"error": str(exc)}), 400
             flash(str(exc), "error")
             return render_template("register.html")
 
         db = current_app.db
         if get_user_by_username(db, username):
+            if wants_json:
+                return jsonify({"error": "Username already exists"}), 409
             flash("Username already exists", "error")
             return render_template("register.html")
 
@@ -91,9 +120,13 @@ def register():
         )
         user_id = create_user(db, username, request.form["password"], display_name, school, role=role)
         if user_id is None:
+            if wants_json:
+                return jsonify({"error": "Username already exists"}), 409
             flash("Username already exists", "error")
             return render_template("register.html")
         logger.info("user=%s registered role=%s", username, role)
+        if wants_json:
+            return jsonify({"ok": True, "username": username}), 201
         flash("Registration successful! Please login.", "success")
         return redirect(url_for("auth.login"))
     return render_template("register.html")
@@ -103,5 +136,7 @@ def register():
 @login_required
 def logout():
     logout_user()
+    if _wants_json():
+        return jsonify({"ok": True})
     flash("You have been logged out.", "success")
     return redirect(url_for("auth.login"))
