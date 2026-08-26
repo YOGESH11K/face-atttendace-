@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # Multi-stage build:
-#   * builder  - compiles dlib (source-only on PyPI) and installs all deps
-#   * runtime  - slim image with only the compiled packages + app source
+#   * builder  - installs all deps (dlib-bin = pre-compiled, no cmake needed)
+#   * runtime  - slim image with only the installed packages + app source
 #
 # Build:  docker build -t face-attendance .
 # Run:    docker run --rm -p 5000:5000 -v face_data:/app/data face-attendance
@@ -12,19 +12,15 @@ FROM python:3.11-slim-bookworm AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Build tools required to compile dlib from source.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
-        cmake \
-        libopenblas-dev \
-        liblapack-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt /tmp/requirements.txt
 
-# Compile dlib with limited parallelism to keep peak build memory bounded.
-ARG MAKEFLAGS=-j2
-RUN pip install --no-cache-dir --target=/opt/pydeps -r /tmp/requirements.txt
+# Install dlib-bin first (pre-compiled, no cmake needed), then face-recognition
+# with --no-deps to avoid pip re-compiling dlib from source.  Finally install
+# the rest which pulls in transitive deps.
+RUN pip install --no-cache-dir --target=/opt/pydeps dlib-bin==20.0.1
+RUN pip install --no-cache-dir --target=/opt/pydeps face-recognition==1.3.0 --no-deps
+RUN pip install --no-cache-dir --target=/opt/pydeps \
+    $(grep -v -E '^(dlib-bin|face-recognition)' /tmp/requirements.txt | tr '\n' ' ')
 
 FROM python:3.11-slim-bookworm AS runtime
 
@@ -32,11 +28,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/opt/pydeps
 
-# Shared libraries required by the compiled dlib and OpenCV wheels.
+# Shared libraries required by dlib-bin and OpenCV wheels.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgomp1 \
         libopenblas0 \
-        liblapack3 \
         libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 

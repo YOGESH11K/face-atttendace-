@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Install system build dependencies (dlib compiles from source)
+      - name: Install system build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
