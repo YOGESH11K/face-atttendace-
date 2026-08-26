@@ -15,10 +15,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt /tmp/requirements.txt
 
 # Install dlib-bin first (pre-compiled, no cmake needed), then face-recognition
-# with --no-deps to avoid pip re-compiling dlib from source.  Finally install
-# the rest which pulls in transitive deps.
+# with --no-deps to avoid pip re-compiling dlib from source.  Then install
+# face-recognition-models (its actual dep), then the rest of requirements.
 RUN pip install --no-cache-dir --target=/opt/pydeps dlib-bin==20.0.1
 RUN pip install --no-cache-dir --target=/opt/pydeps face-recognition==1.3.0 --no-deps
+RUN pip install --no-cache-dir --target=/opt/pydeps face-recognition-models==0.1.0
 RUN pip install --no-cache-dir --target=/opt/pydeps \
     $(grep -v -E '^(dlib-bin|face-recognition)' /tmp/requirements.txt | tr '\n' ' ')
 
