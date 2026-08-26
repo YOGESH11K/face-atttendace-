@@ -7,13 +7,13 @@
 # For a permanent deployment, mount a persistent disk or use object storage.
 
 databases:
-  - name: face-attendance-db
+  - name: empireattendance-db
     plan: free
     databaseName: attendance
 
 services:
   - type: web
-    name: empirerecorgination
+    name: empireattendance
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
@@ -23,7 +23,7 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: face-attendance-db
+          name: empireattendance-db
           property: connectionString
       - key: DATA_DIR
         value: /app/data
@@ -33,7 +33,7 @@ services:
         value: None
       # Allow the SPA frontend (Vercel) to call this API with credentials.
       - key: CORS_ALLOWED_ORIGINS
-        value: https://empirerecorgination.vercel.app
+        value: https://empireattendance.vercel.app
       - key: RENDER
         value: true
       - key: ALLOW_REGISTRATION

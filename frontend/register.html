@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — Face Attendance System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="config.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(1000px 500px at 85% -10%, rgba(0,214,143,0.10) 0%, transparent 60%),
+                  radial-gradient(800px 500px at -10% 110%, rgba(0,184,217,0.08) 0%, transparent 55%),
+                  #06130d;
+      color: #e0f5ec;
+      padding: 24px;
+    }
+
+    .card {
+      background: rgba(0,214,143,0.05);
+      border: 1px solid rgba(0,214,143,0.14);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #00d68f, #00b8d9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #04120b;
+      margin-bottom: 24px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: rgba(224,245,236,0.55);
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(224,245,236,0.7);
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(0,214,143,0.18);
+      border-radius: 10px;
+      color: #e0f5ec;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: #00d68f;
+    }
+
+    input::placeholder {
+      color: rgba(224,245,236,0.3);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      margin-top: 8px;
+      background: linear-gradient(135deg, #00d68f, #00b8d9);
+      color: #04120b;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .flash {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .flash.error {
+      display: block;
+      background: rgba(255,107,107,0.12);
+      color: #ff6b6b;
+    }
+
+    .flash.success {
+      display: block;
+      background: rgba(0,230,140,0.12);
+      color: #00e68c;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: rgba(224,245,236,0.45);
+    }
+
+    .footer a {
+      color: #00d68f;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer a:hover { text-decoration: underline; }
+
+    .brand {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 12px;
+      color: rgba(224,245,236,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">FA</div>
+    <div class="title">Create Account</div>
+    <div class="subtitle">Join the Face Attendance System</div>
+
+    <div id="flash" class="flash"></div>
+
+    <form id="registerForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Choose a username" required />
+      </div>
+      <div class="form-group">
+        <label for="display_name">Display Name</label>
+        <input type="text" id="display_name" name="display_name" placeholder="Your full name" required />
+      </div>
+      <div class="form-group">
+        <label for="school">School Name</label>
+        <input type="text" id="school" name="school" placeholder="Optional" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Min 8 characters" required minlength="8" />
+      </div>
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter password" required />
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Create Account</button>
+    </form>
+
+    <div class="footer">
+      Already have an account? <a href="index.html">Sign In</a>
+    </div>
+  </div>
+
+  <div class="brand">Built by Yash — Face Attendance System</div>
+
+  <script>
+    let csrfToken = '';
+
+    function showFlash(message, type) {
+      const flash = document.getElementById('flash');
+      flash.textContent = message;
+      flash.className = 'flash ' + type;
+    }
+
+    function hideFlash() {
+      const flash = document.getElementById('flash');
+      flash.className = 'flash';
+      flash.textContent = '';
+    }
+
+    async function fetchCsrfToken() {
+      try {
+        const res = await fetch(API_BASE + '/api/csrf', {
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error('Failed to fetch CSRF token');
+        const data = await res.json();
+        csrfToken = data.csrf_token || '';
+      } catch (e) {
+        showFlash('Unable to connect to server.', 'error');
+      }
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      hideFlash();
+
+      const username = document.getElementById('username').value.trim();
+      const display_name = document.getElementById('display_name').value.trim();
+      const school = document.getElementById('school').value.trim();
+      const password = document.getElementById('password').value;
+      const confirm_password = document.getElementById('confirm_password').value;
+
+      if (password.length < 8) {
+        showFlash('Password must be at least 8 characters.', 'error');
+        return;
+      }
+
+      if (password !== confirm_password) {
+        showFlash('Passwords do not match.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+
+      try {
+        const res = await fetch(API_BASE + '/register', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({
+            username: username,
+            display_name: display_name,
+            school: school,
+            password: password,
+            confirm_password: confirm_password
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          showFlash('Account created! Redirecting to login...', 'success');
+          setTimeout(function () {
+            window.location.href = 'index.html';
+          }, 2000);
+        } else {
+          showFlash(data.error || data.message || 'Registration failed. Please try again.', 'error');
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+        }
+      } catch (err) {
+        showFlash('Network error. Please try again.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    });
+
+    fetchCsrfToken();
+  </script>
+</body>
+</html>

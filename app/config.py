@@ -50,7 +50,7 @@ class Config:
 
     # -- Cross-origin API access (separate SPA frontend) --
     # Comma-separated list of origins allowed to call the API with credentials,
-    # e.g. "https://empirerecorgination.vercel.app". Empty disables CORS.
+    # e.g. "https://empireattendance.vercel.app". Empty disables CORS.
     CORS_ALLOWED_ORIGINS = {
         o.strip().rstrip("/")
         for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")

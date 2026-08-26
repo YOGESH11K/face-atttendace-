@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Face Attendance — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06130d;--bg-soft:#0a1a12;
+  --surface:rgba(0,214,143,0.05);--surface-solid:#0d241a;
+  --surface-hover:rgba(0,214,143,0.10);
+  --border:rgba(0,214,143,0.14);--border-strong:rgba(0,214,143,0.28);
+  --text:#e6f6ef;--text-muted:#7fa399;
+  --primary:#00d68f;--primary-2:#00b8d9;--primary-glow:rgba(0,214,143,0.22);
+  --green:#00e68c;--green-bg:rgba(0,230,140,0.12);
+  --teal:#00c9d4;--teal-bg:rgba(0,201,212,0.12);
+  --red:#ff6b6b;--red-bg:rgba(255,107,107,0.12);
+  --yellow:#ffd166;--yellow-bg:rgba(255,209,102,0.12);
+  --radius:16px;--radius-sm:10px;
+  --shadow:0 10px 40px rgba(0,0,0,0.35);
+}
+html{font-size:15px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;position:relative}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(0,214,143,0.08),transparent),radial-gradient(ellipse 60% 40% at 80% 100%,rgba(0,184,217,0.06),transparent);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,214,143,0.015) 2px,rgba(0,214,143,0.015) 4px);pointer-events:none;z-index:9999}
+
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.sidebar{position:fixed;left:0;top:0;width:260px;height:100vh;background:var(--bg-soft);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;transition:transform .3s ease}
+.sidebar-brand{padding:24px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.sidebar-brand .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:var(--bg);flex-shrink:0}
+.sidebar-brand .brand-text{display:flex;flex-direction:column;gap:1px}
+.sidebar-brand .brand-title{font-weight:700;font-size:14px;color:var(--text)}
+.sidebar-brand .brand-sub{font-size:10px;font-weight:500;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase}
+
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;transition:all .2s;font-size:14px;font-weight:500;position:relative;user-select:none}
+.nav-item:hover{background:var(--surface-hover);color:var(--text)}
+.nav-item.active{background:var(--primary-glow);color:var(--primary);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--primary);border-radius:0 4px 4px 0}
+.nav-item svg{width:20px;height:20px;flex-shrink:0}
+.nav-item .badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;letter-spacing:.5px}
+.badge-live{background:var(--red);color:#fff;animation:pulse-badge 2s infinite}
+.badge-admin{background:var(--primary);color:var(--bg)}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.5}}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.sidebar-user{display:flex;align-items:center;gap:10px}
+.sidebar-user .avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;color:var(--bg)}
+.sidebar-user .user-info{display:flex;flex-direction:column;min-width:0}
+.sidebar-user .user-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user .user-handle{font-size:12px;color:var(--text-muted)}
+.sidebar-user .user-role{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600;margin-top:2px;display:inline-block;width:fit-content}
+.sidebar-logout{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);color:var(--red);cursor:pointer;font-size:13px;font-weight:500;transition:all .2s;border:none;background:none;width:100%}
+.sidebar-logout:hover{background:var(--red-bg)}
+.sidebar-logout svg{width:18px;height:18px}
+
+.main{flex:1;margin-left:260px;display:flex;flex-direction:column;height:100vh;position:relative;z-index:1;overflow:hidden}
+
+.main-header{padding:20px 32px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.main-header h1{font-size:22px;font-weight:700}
+.clock{text-align:right}
+.clock-date{font-size:12px;color:var(--text-muted)}
+.clock-time{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--primary)}
+
+.main-content{flex:1;overflow-y:auto;padding:24px 32px 32px}
+.page{display:none}
+.page.active{display:block}
+
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:8px;transition:all .3s}
+.stat-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-card .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.stat-card .stat-icon svg{width:20px;height:20px}
+.stat-card .stat-value{font-size:26px;font-weight:800;line-height:1}
+.stat-card .stat-label{font-size:12px;color:var(--text-muted);font-weight:500}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.card-title{font-size:14px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.card-title span{color:var(--text-muted);font-size:12px;font-weight:400}
+
+.table-wrap{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface)}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);background:var(--surface-solid);white-space:nowrap}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface-hover)}
+
+.attendee-chips{display:flex;flex-wrap:wrap;gap:8px}
+.attendee-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--green-bg);border:1px solid rgba(0,230,140,0.2);font-size:12px;font-weight:500}
+.attendee-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-input{background:var(--surface-solid);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;color:var(--text);font-size:13px;width:240px;outline:none;transition:border .2s}
+.search-input:focus{border-color:var(--primary)}
+.search-input::placeholder{color:var(--text-muted)}
+.filter-btn,.btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit}
+.filter-btn:hover,.btn:hover{border-color:var(--border-strong);background:var(--surface-hover)}
+.filter-btn.active{background:var(--primary-glow);border-color:var(--primary);color:var(--primary)}
+.btn-primary{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.btn-primary:hover{background:#00c080;transform:translateY(-1px)}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:rgba(255,107,107,0.3)}
+.btn-danger:hover{background:rgba(255,107,107,0.2)}
+
+.camera-container{position:relative;width:100%;max-width:640px;border-radius:var(--radius);overflow:hidden;border:2px solid var(--border);background:#000;aspect-ratio:4/3}
+.camera-container video,.camera-container canvas{width:100%;height:100%;object-fit:cover;display:block}
+.camera-container canvas{position:absolute;top:0;left:0}
+.camera-controls{display:flex;gap:10px;margin-top:16px;align-items:center}
+.camera-status{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted)}
+.camera-status .live-dot{width:8px;height:8px;border-radius:50%;background:var(--red);display:none;animation:pulse-badge 1.5s infinite}
+.camera-status .live-dot.on{display:inline-block}
+.recognized-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.rec-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius);padding:28px;width:420px;max-width:90vw;box-shadow:var(--shadow)}
+.modal h3{margin-bottom:20px;font-size:18px;font-weight:700}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select{width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-solid);color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border .2s}
+.form-group input:focus,.form-group select:focus{border-color:var(--primary)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+.toast-container{position:fixed;top:20px;right:20px;z-index:9998;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;max-width:360px;animation:toast-in .3s ease;border:1px solid}
+.toast.info{background:var(--surface-solid);border-color:var(--border);color:var(--text)}
+.toast.ok{background:var(--green-bg);border-color:rgba(0,230,140,0.3);color:var(--green)}
+.toast.err{background:var(--red-bg);border-color:rgba(255,107,107,0.3);color:var(--red)}
+@keyframes toast-in{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+.hamburger{display:none;position:fixed;top:16px;left:16px;z-index:150;width:40px;height:40px;border-radius:10px;background:var(--surface-solid);border:1px solid var(--border);color:var(--text);cursor:pointer;align-items:center;justify-content:center}
+.hamburger svg{width:22px;height:22px}
+
+@media(max-width:1024px){
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .main-header{padding:20px 16px 0}
+  .main-content{padding:20px 16px 32px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+  .camera-container{max-width:100%}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">FA</div>
+    <div class="brand-text">
+      <div class="brand-title">Face Attendance</div>
+      <div class="brand-sub">Smart Recognition System</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" data-page="attendance" onclick="switchPage('attendance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+      Attendance Log
+    </div>
+    <div class="nav-item" data-page="camera" onclick="switchPage('camera')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      Recognition <span class="badge badge-live">LIVE</span>
+    </div>
+    <div class="nav-item" onclick="window.location.href='enroll.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      Enroll Students
+    </div>
+    <div class="nav-item" id="nav-users" data-page="users" onclick="switchPage('users')" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Users <span class="badge badge-admin">ADMIN</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar" id="user-avatar" style="background:var(--primary)">?</div>
+      <div class="user-info">
+        <div class="user-name" id="user-display">Loading...</div>
+        <div class="user-handle" id="user-handle">@...</div>
+        <span class="user-role" id="user-role-pill" style="background:var(--surface);color:var(--text-muted)">...</span>
+      </div>
+    </div>
+    <button class="sidebar-logout" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="main-header">
+    <h1>Command Center</h1>
+    <div class="clock">
+      <div class="clock-date" id="clock-date">--</div>
+      <div class="clock-time" id="clock-time">--:--:--</div>
+    </div>
+  </div>
+  <div class="main-content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--green-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <div class="stat-value" id="stat-students">0</div>
+          <div class="stat-label">Students</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--teal-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <div class="stat-value" id="stat-today">0</div>
+          <div class="stat-label">Today Present</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--primary-glow)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <div class="stat-value" id="stat-week">0</div>
+          <div class="stat-label">This Week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--yellow-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total Records</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--green-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div class="stat-value" id="stat-rate">0%</div>
+          <div class="stat-label">Attendance Rate</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Weekly Trend <span>This week</span></div>
+          <canvas id="chart-weekly" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Today's Coverage <span id="donut-label">0 / 0</span></div>
+          <canvas id="chart-donut" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-title">Today's Attendees <span id="today-count">0 students</span></div>
+        <div class="attendee-chips" id="today-chips">
+          <span style="color:var(--text-muted);font-size:13px">No attendance yet today</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Registered Students</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Photos</th><th>Attendance</th><th>Last Seen</th></tr></thead>
+            <tbody id="students-tbody"><tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:24px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE LOG PAGE -->
+    <div class="page" id="page-attendance">
+      <div class="toolbar">
+        <input class="search-input" type="text" placeholder="Search attendance..." id="att-search" oninput="filterAttendance()">
+        <button class="filter-btn active" id="filter-all" onclick="setAttFilter('all')">All</button>
+        <button class="filter-btn" id="filter-today" onclick="setAttFilter('today')">Today</button>
+        <div style="flex:1"></div>
+        <button class="btn" onclick="exportCSV()">
+          <svg style="width:14px;height:14px;vertical-align:-2px;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+        <button class="btn btn-danger" onclick="clearToday()">Clear Today</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Date</th><th>Time</th><th>Source</th></tr></thead>
+          <tbody id="att-tbody"><tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:24px">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RECOGNITION PAGE -->
+    <div class="page" id="page-camera">
+      <div class="camera-container" id="camera-container">
+        <video id="cam-video" autoplay playsinline muted></video>
+        <canvas id="cam-overlay"></canvas>
+      </div>
+      <div class="camera-controls">
+        <button class="btn btn-primary" id="cam-start-btn" onclick="startCamera()">Start Recognition</button>
+        <button class="btn btn-danger" id="cam-stop-btn" onclick="stopCamera()" style="display:none">Stop</button>
+        <div class="camera-status"><span class="live-dot" id="cam-live-dot"></span><span id="cam-status-text">Camera off</span></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="card-title">Recognized This Session</div>
+        <div class="recognized-chips" id="recognized-chips"><span style="color:var(--text-muted);font-size:13px">Start camera to begin</span></div>
+      </div>
+    </div>
+
+    <!-- USERS PAGE -->
+    <div class="page" id="page-users">
+      <div class="toolbar">
+        <input class="search-input" type="text" placeholder="Search users..." id="user-search" oninput="filterUsers()">
+        <div style="flex:1"></div>
+        <button class="btn btn-primary" onclick="openModal()">+ New User</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>School</th><th>Role</th><th>Photos</th><th>Attendance</th><th>Last Attendance</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:24px">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast-container" id="toast-container"></div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Create New User</h3>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="new-username" placeholder="e.g. john_doe">
+    </div>
+    <div class="form-group">
+      <label>Display Name</label>
+      <input type="text" id="new-display" placeholder="e.g. John Doe">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="new-password" placeholder="Minimum 6 characters">
+    </div>
+    <div class="form-group">
+      <label>School</label>
+      <input type="text" id="new-school" placeholder="e.g. CS Department">
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="new-role">
+        <option value="teacher">Teacher</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('modal-overlay').classList.remove('show')">Cancel</button>
+      <button class="btn btn-primary" onclick="createUser()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let CSRF_TOKEN = '';
+let CURRENT_USER = {};
+let attendanceRecords = [];
+let attFilter = 'all';
+let allUsers = [];
+let weeklyChart = null;
+let donutChart = null;
+let camStream = null;
+let camInterval = null;
+let recognizedSet = new Set();
+
+async function api(path, options) {
+  var opts = options || {};
+  opts.credentials = 'include';
+  opts.headers = Object.assign({ 'Accept': 'application/json' }, opts.headers || {});
+  if (opts.method && opts.method.toUpperCase() !== 'GET') {
+    opts.headers['X-CSRFToken'] = CSRF_TOKEN;
+  }
+  if (opts.body && typeof opts.body === 'string') {
+    opts.headers['Content-Type'] = 'application/json';
+  }
+  try {
+    var r = await fetch(API_BASE + path, opts);
+    if (r.status === 401) { window.location.href = 'index.html'; return null; }
+    var data = await r.json().catch(function() { return {}; });
+    if (!r.ok && data.error) { toast(data.error, 'err'); return null; }
+    return data;
+  } catch (e) {
+    toast('Network error — check your connection', 'err');
+    return null;
+  }
+}
+
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  var parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return parts[0].charAt(0).toUpperCase() + parts[parts.length - 1].charAt(0).toUpperCase();
+}
+
+function getColor(name) {
+  if (!name) return '#00d68f';
+  var hash = 0;
+  for (var i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  var colors = ['#00d68f','#00b8d9','#a78bfa','#f472b6','#fb923c','#facc15','#34d399','#60a5fa','#c084fc','#f87171'];
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  var d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function toast(message, type) {
+  type = type || 'info';
+  var c = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = message;
+  c.appendChild(t);
+  setTimeout(function() { t.remove(); }, 4000);
+}
+
+function tickClock() {
+  var now = new Date();
+  document.getElementById('clock-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('clock-time').textContent = now.toLocaleTimeString('en-US', { hour12: false });
+}
+setInterval(tickClock, 1000);
+
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item[data-page]').forEach(function(n) { n.classList.remove('active'); });
+  var page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  var nav = document.querySelector('.nav-item[data-page="' + name + '"]');
+  if (nav) nav.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+  if (name === 'attendance') loadAttendance();
+  if (name === 'users') loadUsers();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function updateUserInfo(stats) {
+  CURRENT_USER = stats;
+  var display = stats.display_name || stats.username || 'User';
+  var username = stats.username || '...';
+  var role = stats.role || 'student';
+  var school = stats.school || '';
+  document.getElementById('user-avatar').textContent = getInitials(display);
+  document.getElementById('user-avatar').style.background = getColor(display);
+  document.getElementById('user-display').textContent = escapeHtml(display);
+  document.getElementById('user-handle').textContent = '@' + escapeHtml(username);
+  var pill = document.getElementById('user-role-pill');
+  pill.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+  if (role === 'admin') {
+    pill.style.background = 'var(--primary-glow)';
+    pill.style.color = 'var(--primary)';
+    document.getElementById('nav-users').style.display = '';
+  } else {
+    pill.style.background = 'var(--surface)';
+    pill.style.color = 'var(--text-muted)';
+    document.getElementById('nav-users').style.display = 'none';
+  }
+}
+
+function renderStats(stats) {
+  var students = stats.student_count || 0;
+  var todayCount = stats.today_attendance || 0;
+  var weekCount = stats.this_week || 0;
+  var totalRecords = stats.total_records || 0;
+  var rate = students > 0 ? Math.round((todayCount / students) * 100) : 0;
+  document.getElementById('stat-students').textContent = students;
+  document.getElementById('stat-today').textContent = todayCount;
+  document.getElementById('stat-week').textContent = weekCount;
+  document.getElementById('stat-total').textContent = totalRecords;
+  document.getElementById('stat-rate').textContent = rate + '%';
+
+  document.getElementById('today-count').textContent = todayCount + ' student' + (todayCount !== 1 ? 's' : '');
+  var chipsEl = document.getElementById('today-chips');
+  var todayList = stats.today_list || [];
+  if (todayList.length === 0) {
+    chipsEl.innerHTML = '<span style="color:var(--text-muted);font-size:13px">No attendance yet today</span>';
+  } else {
+    chipsEl.innerHTML = todayList.map(function(name) {
+      return '<div class="attendee-chip"><span class="dot"></span>' + escapeHtml(name) + '</div>';
+    }).join('');
+  }
+
+  var studs = stats.students || {};
+  var tbody = document.getElementById('students-tbody');
+  var keys = Object.keys(studs);
+  if (keys.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:24px">No students enrolled</td></tr>';
+  } else {
+    tbody.innerHTML = keys.map(function(name) {
+      var s = studs[name];
+      return '<tr><td style="font-weight:600">' + escapeHtml(name) + '</td><td>' + (s.photo_count || 0) + '</td><td>' + (s.attendance_count || 0) + '</td><td>' + fmtDate(s.last_attendance) + '</td></tr>';
+    }).join('');
+  }
+
+  renderWeeklyChart(stats);
+  renderDonutChart(todayCount, students);
+}
+
+function renderWeeklyChart(stats) {
+  var weekly = stats.this_week_data || {};
+  var days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var data = days.map(function(d) { return weekly[d] || 0; });
+  var ctx = document.getElementById('chart-weekly').getContext('2d');
+  if (weeklyChart) weeklyChart.destroy();
+  weeklyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: 'rgba(0,214,143,0.3)',
+        borderColor: '#00d68f',
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(0,214,143,0.08)' }, ticks: { color: '#7fa399', font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(0,214,143,0.08)' }, ticks: { color: '#7fa399', font: { size: 11 }, stepSize: 1 } }
+      }
+    }
+  });
+}
+
+function renderDonutChart(present, total) {
+  document.getElementById('donut-label').textContent = present + ' / ' + total;
+  var absent = Math.max(0, total - present);
+  var ctx = document.getElementById('chart-donut').getContext('2d');
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Present', 'Absent'],
+      datasets: [{
+        data: [present, absent],
+        backgroundColor: ['rgba(0,214,143,0.7)', 'rgba(255,107,107,0.2)'],
+        borderColor: ['#00d68f', 'rgba(255,107,107,0.3)'],
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '70%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#7fa399', padding: 16, font: { size: 12 } } } }
+    }
+  });
+}
+
+async function loadDashboard() {
+  var data = await api('/api/stats');
+  if (!data) return;
+  updateUserInfo(data);
+  renderStats(data);
+}
+
+async function loadAttendance() {
+  var data = await api('/api/attendance?limit=1000');
+  if (!data) return;
+  attendanceRecords = data.records || [];
+  renderAttendanceTable();
+}
+
+function renderAttendanceTable() {
+  var search = (document.getElementById('att-search').value || '').toLowerCase();
+  var today = new Date().toISOString().slice(0, 10);
+  var filtered = attendanceRecords.filter(function(r) {
+    var matchSearch = !search || (r.Name || '').toLowerCase().indexOf(search) >= 0 || (r.Date || '').indexOf(search) >= 0;
+    var matchFilter = attFilter === 'all' || r.Date === today;
+    return matchSearch && matchFilter;
+  });
+  var tbody = document.getElementById('att-tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted);text-align:center;padding:24px">No records found</td></tr>';
+  } else {
+    tbody.innerHTML = filtered.slice(0, 200).map(function(r) {
+      return '<tr><td style="font-weight:600">' + escapeHtml(r.Name) + '</td><td>' + escapeHtml(r.Date) + '</td><td>' + escapeHtml(r.Time) + '</td><td>' + escapeHtml(r.Source || 'camera') + '</td></tr>';
+    }).join('');
+  }
+}
+
+function filterAttendance() { renderAttendanceTable(); }
+
+function setAttFilter(f) {
+  attFilter = f;
+  document.getElementById('filter-all').classList.toggle('active', f === 'all');
+  document.getElementById('filter-today').classList.toggle('active', f === 'today');
+  renderAttendanceTable();
+}
+
+async function exportCSV() {
+  window.open(API_BASE + '/api/attendance/export.csv', '_blank');
+}
+
+async function clearToday() {
+  if (!confirm('Clear all attendance records for today?')) return;
+  var data = await api('/api/attendance/clear_today', { method: 'POST' });
+  if (data) {
+    toast('Today\'s attendance cleared', 'ok');
+    loadDashboard();
+    loadAttendance();
+  }
+}
+
+async function loadUsers() {
+  var data = await api('/api/users');
+  if (!data) return;
+  allUsers = data.users || [];
+  renderUsersTable();
+}
+
+function renderUsersTable() {
+  var search = (document.getElementById('user-search').value || '').toLowerCase();
+  var filtered = allUsers.filter(function(u) {
+    return !search || (u.username || '').toLowerCase().indexOf(search) >= 0 || (u.display_name || '').toLowerCase().indexOf(search) >= 0;
+  });
+  var tbody = document.getElementById('users-tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:24px">No users found</td></tr>';
+  } else {
+    tbody.innerHTML = filtered.map(function(u) {
+      var roleColor = u.role === 'admin' ? 'var(--primary)' : 'var(--text-muted)';
+      var roleBg = u.role === 'admin' ? 'var(--primary-glow)' : 'var(--surface)';
+      return '<tr>'
+        + '<td><div style="display:flex;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--bg);background:' + getColor(u.display_name || u.username) + '">' + getInitials(u.display_name || u.username) + '</div><div><div style="font-weight:600">' + escapeHtml(u.display_name) + '</div><div style="font-size:11px;color:var(--text-muted)">@' + escapeHtml(u.username) + '</div></div></div></td>'
+        + '<td>' + escapeHtml(u.school || '—') + '</td>'
+        + '<td><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:' + roleBg + ';color:' + roleColor + '">' + escapeHtml(u.role) + '</span></td>'
+        + '<td>' + (u.photo_count || 0) + '</td>'
+        + '<td>' + (u.attendance_count || 0) + '</td>'
+        + '<td>' + fmtDate(u.last_attendance) + '</td>'
+        + '<td><select style="background:var(--surface-solid);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;cursor:pointer" onchange="setRole(' + u.id + ', this.value)">'
+        + '<option value="student"' + (u.role === 'student' ? ' selected' : '') + '>Student</option>'
+        + '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Admin</option>'
+        + '</select></td>'
+        + '</tr>';
+    }).join('');
+  }
+}
+
+function filterUsers() { renderUsersTable(); }
+
+async function setRole(userId, role) {
+  await api('/api/users/' + userId + '/role', {
+    method: 'POST',
+    body: JSON.stringify({ role: role })
+  });
+  toast('Role updated', 'ok');
+  loadUsers();
+}
+
+function openModal() {
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('new-username').value = '';
+  document.getElementById('new-display').value = '';
+  document.getElementById('new-password').value = '';
+  document.getElementById('new-school').value = '';
+  document.getElementById('new-role').value = 'student';
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('show');
+  }
+}
+
+async function createUser() {
+  var username = document.getElementById('new-username').value.trim();
+  var display_name = document.getElementById('new-display').value.trim();
+  var password = document.getElementById('new-password').value;
+  var school = document.getElementById('new-school').value.trim();
+  var role = document.getElementById('new-role').value;
+  if (!username || !password) { toast('Username and password required', 'err'); return; }
+  var data = await api('/api/users', {
+    method: 'POST',
+    body: JSON.stringify({ username: username, display_name: display_name, password: password, school: school, role: role })
+  });
+  if (data) {
+    toast('User created successfully', 'ok');
+    document.getElementById('modal-overlay').classList.remove('show');
+    loadUsers();
+  }
+}
+
+function startCamera() {
+  var video = document.getElementById('cam-video');
+  var overlay = document.getElementById('cam-overlay');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } } })
+    .then(function(stream) {
+      camStream = stream;
+      video.srcObject = stream;
+      video.play();
+      document.getElementById('cam-start-btn').style.display = 'none';
+      document.getElementById('cam-stop-btn').style.display = '';
+      document.getElementById('cam-live-dot').classList.add('on');
+      document.getElementById('cam-status-text').textContent = 'Live — scanning faces';
+      toast('Camera started', 'ok');
+
+      camInterval = setInterval(function() {
+        if (!camStream) return;
+        var vw = video.videoWidth, vh = video.videoHeight;
+        if (!vw || !vh) return;
+        overlay.width = vw;
+        overlay.height = vh;
+        var ctx = overlay.getContext('2d');
+        ctx.clearRect(0, 0, vw, vh);
+
+        var tempCanvas = document.createElement('canvas');
+        tempCanvas.width = vw;
+        tempCanvas.height = vh;
+        tempCanvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+        var base64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+
+        fetch(API_BASE + '/api/recognize', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+          body: JSON.stringify({ image: base64 })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+          if (!data) return;
+          var faces = data.faces || [];
+          var marked = data.marked || [];
+          marked.forEach(function(n) { recognizedSet.add(n); });
+
+          faces.forEach(function(face) {
+            var known = face.name && face.name !== 'UNKNOWN' && face.name !== 'Unknown';
+            ctx.strokeStyle = known ? '#00d68f' : '#ff6b6b';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(face.left, face.top, face.right - face.left, face.bottom - face.top);
+
+            var label = face.name || 'Unknown';
+            ctx.fillStyle = known ? 'rgba(0,214,143,0.85)' : 'rgba(255,107,107,0.85)';
+            var tw = ctx.measureText(label).width + 12;
+            var lx = face.left;
+            var ly = face.top - 24;
+            if (ly < 0) ly = face.top;
+            ctx.fillRect(lx, ly, tw, 22);
+            ctx.fillStyle = known ? '#06130d' : '#06130d';
+            ctx.font = '600 13px Inter, sans-serif';
+            ctx.fillText(label, lx + 6, ly + 16);
+          });
+
+          if (marked.length > 0) {
+            renderRecognizedChips();
+          }
+        }).catch(function() {});
+      }, 2000);
+    }).catch(function(err) {
+      toast('Camera access denied: ' + err.message, 'err');
+    });
+}
+
+function stopCamera() {
+  if (camStream) {
+    camStream.getTracks().forEach(function(t) { t.stop(); });
+    camStream = null;
+  }
+  if (camInterval) { clearInterval(camInterval); camInterval = null; }
+  var video = document.getElementById('cam-video');
+  video.srcObject = null;
+  var overlay = document.getElementById('cam-overlay');
+  overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+  document.getElementById('cam-start-btn').style.display = '';
+  document.getElementById('cam-stop-btn').style.display = 'none';
+  document.getElementById('cam-live-dot').classList.remove('on');
+  document.getElementById('cam-status-text').textContent = 'Camera off';
+}
+
+function renderRecognizedChips() {
+  var el = document.getElementById('recognized-chips');
+  if (recognizedSet.size === 0) {
+    el.innerHTML = '<span style="color:var(--text-muted);font-size:13px">Start camera to begin</span>';
+    return;
+  }
+  el.innerHTML = Array.from(recognizedSet).map(function(name) {
+    var c = getColor(name);
+    return '<div class="rec-chip" style="background:' + c + '22;border-color:' + c + '55;color:' + c + '">' + escapeHtml(name) + '</div>';
+  }).join('');
+}
+
+async function doLogout() {
+  await api('/logout', { method: 'POST' });
+  window.location.href = 'index.html';
+}
+
+tickClock();
+(async function init() {
+  var r = await fetch(API_BASE + '/api/csrf', { credentials: 'include' });
+  if (r.ok) { var d = await r.json().catch(function() { return {}; }); CSRF_TOKEN = d.csrf_token || ''; }
+  loadDashboard();
+  setInterval(loadDashboard, 30000);
+})();
+</script>
+</body>
+</html>
